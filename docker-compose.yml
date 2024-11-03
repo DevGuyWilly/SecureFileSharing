@@ -2,31 +2,38 @@ version: '3.8'
 
 services:
   auth-service:
-    build:
+    build: 
       context: ./auth-service
       dockerfile: Dockerfile
     container_name: auth-service
+    restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/secure_file_share
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:-secure_file_user}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-your_password}
-      - JWT_SECRET=${JWT_SECRET:-default_dev_secret}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-SecurePassword123!}
+      - JWT_SECRET=${JWT_SECRET}
     ports:
       - "8080:8080"
     networks:
       - secure-file-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health/service"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mysql:
     image: mysql:8.0
     container_name: secure_file_share_mysql
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: secure_file_share
-      MYSQL_USER: ${MYSQL_USER:-secure_file_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-your_password}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -44,4 +51,4 @@ volumes:
 
 networks:
   secure-file-network:
-    driver: bridge 
+    driver: bridge
