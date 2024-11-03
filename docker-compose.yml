@@ -1,6 +1,10 @@
+version: '3.8'
+
 services:
   auth-service:
-    build: .
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
     container_name: auth-service
     depends_on:
       mysql:
@@ -40,4 +44,4 @@ volumes:
 
 networks:
   secure-file-network:
-    driver: bridge
+    driver: bridge 

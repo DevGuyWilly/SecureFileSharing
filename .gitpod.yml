@@ -1,0 +1,35 @@
+image: gitpod/workspace-java-17
+
+tasks:
+  - name: Setup and Start Services
+    init: |
+      cp .env.example .env
+      docker-compose build
+    command: |
+      docker-compose up
+
+  - name: Monitor Services
+    command: |
+      echo "Waiting for services to start..."
+      gp ports await 8080
+      echo "Services are ready!"
+      echo "Auth API is available at: $(gp url 8080)"
+
+ports:
+  - port: 8080
+    name: Auth Service
+    onOpen: notify
+    visibility: public
+  - port: 3306
+    name: MySQL
+    onOpen: ignore
+    visibility: private
+
+vscode:
+  extensions:
+    - vscjava.vscode-java-pack
+    - pivotal.vscode-spring-boot
+    - redhat.java
+    - vscjava.vscode-java-debug
+    - vscjava.vscode-java-test
+    - vscjava.vscode-maven
