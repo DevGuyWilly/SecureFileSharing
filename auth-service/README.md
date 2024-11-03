@@ -1,32 +1,26 @@
 # Auth Service
 
-## Setup
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/YourUsername/YourRepo)
 
-1. Copy `.env.example` to `.env`: 
+## Development in Gitpod
 
-2. Update the `.env` file with your credentials
+1. Click the "Open in Gitpod" button above
+2. Wait for the workspace to start
+3. The application will automatically:
+   - Start MySQL
+   - Build the application
+   - Run the Spring Boot service
 
-3. Start the database:
+## API Endpoints
 
-```bash
-docker compose up
-``` 
+All endpoints are available at:
+https://8080-${GITPOD_WORKSPACE_URL#https://}
 
-4. Run the application:
+- POST /api/auth/register - Register new user
+- POST /api/auth/login - Login user
+- GET /api/auth/validate-token - Validate JWT token
+- POST /api/auth/logout - Logout user
 
-```bash
-./mvnw spring-boot:run
-``` 
+## Testing in Gitpod
 
-## Environment Variables
-
-The following environment variables are required:
-
-- `DB_URL`: Database URL
-- `DB_USERNAME`: Database username
-- `DB_PASSWORD`: Database password
-- `JWT_SECRET`: Secret key for JWT token generation
-
-## Development
-
-For local development, you can use the provided `.env.example` as a template.
+Use curl or Postman to test the endpoints:

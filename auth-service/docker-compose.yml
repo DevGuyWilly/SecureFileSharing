@@ -1,20 +1,43 @@
 services:
+  auth-service:
+    build: .
+    container_name: auth-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/secure_file_share
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:-secure_file_user}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-your_password}
+      - JWT_SECRET=${JWT_SECRET:-default_dev_secret}
+    ports:
+      - "8080:8080"
+    networks:
+      - secure-file-network
+
   mysql:
     image: mysql:8.0
     container_name: secure_file_share_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: secure_file_share
-      MYSQL_USER: secure_file_user
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER:-secure_file_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-your_password}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+    networks:
+      - secure-file-network
 
 volumes:
   mysql_data:
+
+networks:
+  secure-file-network:
+    driver: bridge

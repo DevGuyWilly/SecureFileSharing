@@ -1,0 +1,32 @@
+image: gitpod/workspace-java-17
+
+tasks:
+  - name: Install & Run MySQL
+    init: |
+      docker-compose pull mysql
+    command: |
+      docker-compose up mysql
+
+  - name: Build & Run Application
+    init: |
+      ./mvnw clean install -DskipTests
+    command: |
+      cp .env.example .env
+      ./mvnw spring-boot:run
+
+ports:
+  - port: 8080
+    onOpen: open-preview
+    visibility: public
+  - port: 3306
+    onOpen: ignore
+    visibility: private
+
+vscode:
+  extensions:
+    - vscjava.vscode-java-pack
+    - pivotal.vscode-spring-boot
+    - redhat.java
+    - vscjava.vscode-java-debug
+    - vscjava.vscode-java-test
+    - vscjava.vscode-maven 
