@@ -25,8 +25,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {
-        return authService.logoutUser(token);
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String authHeader) {
+        return authService.logoutUser(authHeader);
     }
 
     @GetMapping("/validate-token")

@@ -5,7 +5,7 @@ A full-stack application for secure file management and sharing with end-to-end 
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
-- [Architecture Overview](#architecture-overview)
+- [Architecture Overview](#architecture-overview) 
 - [Design Patterns](#design-patterns)
 - [Microservices](#microservices)
 - [Data Flow and Security](#data-flow-and-security)
@@ -21,7 +21,7 @@ This platform allows users to securely upload, download, and share files with ad
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript
+- **Frontend**: Still deciding
 - **Backend**: Spring Boot (Java), MVC Pattern, Microservice Architecture
 - **Database**: MongoDB (File metadata), AWS S3 (File storage)
 - **Encryption**: AES-256 Encryption
@@ -29,7 +29,7 @@ This platform allows users to securely upload, download, and share files with ad
 
 ## Architecture Overview
 
-This project is built using the Microservice Architecture. Key services include:
+This project will be built using the Microservice Architecture. Key services include:
 1. **Auth Service**: Manages user authentication, role-based access control, and token validation.
 2. **File Service**: Handles file upload, download, encryption, and secure sharing.
 3. **Notification Service**: Sends user notifications for file-related events.
@@ -72,69 +72,3 @@ This project is built using the Microservice Architecture. Key services include:
   - `/log-activity`: Log user actions related to file management
   - `/get-logs`: Retrieve activity logs for auditing
 - **Data**: Logs include actions like file uploads, downloads, deletions, and shares.
-
-### Data Flow and Security
-
-#### Overall System Data Flow
-flowchart TD
-    User --> AuthService["Auth Service"]
-    AuthService -->|JWT Token| User
-    User -->|Upload/Download| FileService["File Service"]
-    FileService -->|Encrypt| AWS_S3["AWS S3 Storage"]
-    FileService -->|Store Metadata| MongoDB["MongoDB Database"]
-    FileService --> ActivityLoggingService["Activity Logging Service"]
-    FileService --> NotificationService["Notification Service"]
-    ActivityLoggingService --> MongoDB
-    NotificationService --> User
-
-####  File Upload Flow
-sequenceDiagram
-    participant User
-    participant AuthService
-    participant FileService
-    participant AWS_S3 as AWS S3
-    participant MongoDB
-
-    User ->> AuthService: Authenticate
-    AuthService -->> User: JWT Token
-    User ->> FileService: Upload File with JWT
-    FileService ->> FileService: Encrypt File (AES-256)
-    FileService ->> AWS_S3: Store Encrypted File
-    FileService ->> MongoDB: Save Metadata (File ID, User ID, Encryption Key)
-    FileService ->> ActivityLoggingService: Log Upload Activity
-
-#### File Download Flow
-sequenceDiagram
-    participant User
-    participant AuthService
-    participant FileService
-    participant AWS_S3 as AWS S3
-    participant MongoDB
-
-    User ->> AuthService: Authenticate
-    AuthService -->> User: JWT Token
-    User ->> FileService: Download File with JWT
-    FileService ->> MongoDB: Fetch File Metadata
-    FileService ->> AWS_S3: Retrieve Encrypted File
-    FileService ->> FileService: Decrypt File
-    FileService -->> User: Send Decrypted File
-    FileService ->> ActivityLoggingService: Log Download Activity
-
-
-#### File Sharing Flow
-sequenceDiagram
-    participant User
-    participant AuthService
-    participant FileService
-    participant MongoDB
-    participant NotificationService
-
-    User ->> AuthService: Authenticate
-    AuthService -->> User: JWT Token
-    User ->> FileService: Request File Share with JWT
-    FileService ->> MongoDB: Generate Secure Link and Save Expiry
-    FileService ->> NotificationService: Notify Recipient
-    NotificationService -->> Recipient: Share Link Notification
-    FileService ->> ActivityLoggingService: Log Sharing Activity
-
-

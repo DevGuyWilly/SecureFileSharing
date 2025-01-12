@@ -1,5 +1,5 @@
 # Environment files
-.env
+auth-service/.env
 .env.local
 .env.*
 !.env.example

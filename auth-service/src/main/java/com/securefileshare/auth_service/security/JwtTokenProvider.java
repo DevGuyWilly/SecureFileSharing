@@ -1,49 +1,44 @@
 package com.securefileshare.auth_service.security;
 
+import com.securefileshare.auth_service.model.User;
+import com.securefileshare.auth_service.repository.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-
 import java.security.Key;
 import java.util.Date;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Base64;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
-    private long jwtExpirationMs;
+    @Value("${jwt.expiration}")
+    private int jwtExpirationMs;
 
     private Key key;
-    private final Map<String, Date> invalidatedTokens = new ConcurrentHashMap<>();
+    
+    // Thread-safe set to store invalidated tokens
+    private final Set<String> blacklistedTokens = ConcurrentHashMap.newKeySet();
+    private UserRepository userRepository;
 
     @PostConstruct
-    public void init() {
-        // Use a secure key generation method
-        byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
-        key = Keys.hmacShaKeyFor(keyBytes);
+    protected void init() {
+        this.key = Keys.secretKeyFor(SignatureAlgorithm.HS512);
     }
 
     public String generateToken(Authentication authentication) {
-        UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
         return Jwts.builder()
-                .setSubject(userPrincipal.getUsername())
+                .setSubject(authentication.getName())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
@@ -57,23 +52,18 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateToken(String authToken) {
         try {
-            // Check if token is invalidated
-            if (invalidatedTokens.containsKey(token)) {
-                Date invalidationTime = invalidatedTokens.get(token);
-                if (invalidationTime.after(new Date())) {
-                    return false;
-                } else {
-                    // Clean up expired invalidation
-                    invalidatedTokens.remove(token);
-                }
+            // First check if token is blacklisted
+            if (blacklistedTokens.contains(authToken)) {
+                return false;
             }
 
+            // Then verify the token's signature and expiration
             Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
-                .parseClaimsJws(token);
+                .parseClaimsJws(authToken);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
@@ -81,26 +71,32 @@ public class JwtTokenProvider {
     }
 
     public void invalidateToken(String token) {
-        // Store invalidation time as token expiration time
-        try {
-            Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-            
-            Date expirationDate = claims.getExpiration();
-            invalidatedTokens.put(token, expirationDate);
-        } catch (JwtException e) {
-            // If token can't be parsed, invalidate it immediately
-            invalidatedTokens.put(token, new Date(System.currentTimeMillis() + jwtExpirationMs));
+        if (token != null && validateToken(token)) {
+            blacklistedTokens.add(token);
         }
     }
 
-    // Cleanup method to run periodically
-    @Scheduled(fixedRate = 3600000) // Run every hour
-    public void cleanupInvalidatedTokens() {
+    public String getUserIdFromToken(String token) {
+        String username = getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getId();
+    }
+
+    // Optional: Method to clean up expired tokens from blacklist
+    public void cleanupBlacklist() {
         Date now = new Date();
-        invalidatedTokens.entrySet().removeIf(entry -> entry.getValue().before(now));
+        blacklistedTokens.removeIf(token -> {
+            try {
+                Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+                return claims.getExpiration().before(now);
+            } catch (Exception e) {
+                return true; // Remove invalid tokens
+            }
+        });
     }
 }
